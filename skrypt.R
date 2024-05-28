@@ -35,3 +35,24 @@ for(column in columnnames){
   names(all_means)[ncol(all_means)]<-column
 }
 rownames(all_means)<-groups
+
+
+####uzupelnienie brakow
+completed_rows<-c()
+for(column in colnames(data))
+{
+  if(is.numeric(data[,column]))
+  {
+    for(row in seq_len(nrow(data)))
+      if(is.na(data[row,column]))
+        {
+        data[row,column]<-all_means[data[row,1],column]
+        completed_rows<-c(completed_rows,row)
+  }
+  }
+}
+if(length(completed_rows)>0){
+  comrows<-paste(completed_rows,collapse="; ")
+  print(paste("uzupelniono brakujace dane w rekordach: ",comrows))
+  }
+  
