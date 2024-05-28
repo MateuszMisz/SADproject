@@ -1,3 +1,23 @@
+install.packages("Hmisc")
+library(Hmisc)
+
+install.packages("dplyr")
+library(dplyr)
+
+#install.packages("https://cran.r-project.org/src/contrib/Archive/ggpubr/ggpubr_0.2.4.tar.gz", repo=NULL, type="source")
+install.packages("ggpubr")
+library(ggpubr)
+
+install.packages("car")
+library(car)
+
+install.packages("dunn.test")
+library(dunn.test)
+
+install.packages("FSA")
+library(FSA)
+
+
 #args<- commandArgs(trailingOnly = false)
 #if(length(args!=1)){
 #  stop("sciezka do pliku musi byc jedynym argumentem")
@@ -27,6 +47,9 @@ all_means<-data.frame(
 for(column in columnnames){
   mean_vector<-c()
   for(group in groups){
+    print(column)
+    print(group)
+    print(data[which(data[,1]==group),column])
     meanv<-mean(data[which(data[,1]==group),column],na.rm=TRUE)
     mean_vector<-c(mean_vector,meanv)
   }
@@ -56,3 +79,12 @@ if(length(completed_rows)>0){
   print(paste("uzupelniono brakujace dane w rekordach: ",comrows))
   }
   
+
+#dane odstajace
+
+for(column in numeric_column_names){
+  print("Aaaaaaaaaaaaaaaaaaaaaaaaa")
+      print(paste("dane odstajace w kolumnie ",column,":"))
+      boxplot(data)
+}
+boxplot(wiek)
