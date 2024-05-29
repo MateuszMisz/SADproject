@@ -1,4 +1,4 @@
-
+library(car)
 library(dplyr)
 #args<- commandArgs(trailingOnly = false)
 #if(length(args!=1)){
@@ -23,13 +23,12 @@ print("statystyki ogolne:")
 for(column in numeric_column_names){
   boxplot(data[,column],main=column)
 }
-for(group in group){
+for(group in groups){
   print(paste("grupa :",group))
   tmpdata<-data[which(data[,1]==group),]
   print(summary(tmpdata))
 }
 
-table<-"c"
 for(column in colnames(data))
 {
   if(!is.numeric(data[,column])){
@@ -56,9 +55,7 @@ all_means<-data.frame(
 for(column in columnnames){
   mean_vector<-c()
   for(group in groups){
-    print(column)
-    print(group)
-    print(data[which(data[,1]==group),column])
+
     meanv<-mean(data[which(data[,1]==group),column],na.rm=TRUE)
     mean_vector<-c(mean_vector,meanv)
   }
@@ -110,20 +107,48 @@ for(column in numeric_column_names){
 }
 
 ### shapiro test
+print("sprawdzenie zgodnosci z rozkladem normalnym:")
 for(column in numeric_column_names){
+  good_for_aov=FALSE
   pvalueShapiroTestHSCRP <- data %>% group_by( colnames(data)[1]) %>%
     summarise(
       p.value = shapiro.test(data[,column])$p.value
     )
   pvalueShapiroTestHSCRP
   
-  pvalueShapiroTestHSCRP$p.value
-  pvalueShapiroTestHSCRP$p.value[(pvalueShapiroTestHSCRP$grupa == "CHOR1")]
+  #pvalueShapiroTestHSCRP$p.value
+  #pvalueShapiroTestHSCRP$p.value[(pvalueShapiroTestHSCRP[,1] == "CHOR1")]
   
   for(i in 1:length(pvalueShapiroTestHSCRP$p.value)){
+    #print(pvalueShapiroTestHSCRP$p.value)
     if(pvalueShapiroTestHSCRP$p.value[i] < 0.05){
-      cat("\n", pvalueShapiroTestHSCRP$p.value[i], "< 0.05 - nie można założyć zgodności z rozkładem normalnym")
+      cat("\ndla ",column," p-value = ", pvalueShapiroTestHSCRP$p.value[i], "< 0.05 - nie można założyć zgodności z rozkładem normalnym\n")
     }else{
-      cat("\n", pvalueShapiroTestHSCRP$p.value[i], "> 0.05 - można założyć zgodność z rozkładem normalnym")
+      cat("\ndla ",column," p-value = ", pvalueShapiroTestHSCRP$p.value[i], "> 0.05 - można założyć zgodność z rozkładem normalnym\n")
+      print(paste("ocena jednorodnosci wariancji dla: ",column))
+      leveneTestResult<-leveneTest(data[,column]~data[,1],data=data)
+      print(leveneTestResult)
+      print(leveneTestResult$"Pr(>F)"[1])
+      if(leveneTestResult$"Pr(>F)"[1]<0.05){
+        cat("brak jednorodnosc\n")
+      }else{
+        cat("jednorodnosc\n")
+        good_for_aov=TRUE
+      }
+      
     }
-  }}
+  }
+  if(good_for_aov){
+    print("aov\n\n\n")
+    print(aov(data[,column]~data[,1],data=data))
+    print(paste("summary: ",summary(aov(data[,column]~data[,1],data=data))))
+    AOV_p_value<-summary(aov(data[,column]~data[,1],data=data))[[1]][["Pr(>F)"]][[1]]
+    print(AOV_p_value)
+    if(AOV_p_value<0.05){
+      cat("sa roznice miedzy grupmami\n")
+      
+    }else{
+      cat("brak roznic miedzy grupami\n")
+    }
+  }
+}
