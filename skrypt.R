@@ -140,15 +140,20 @@ for(column in numeric_column_names){
   }
   if(good_for_aov){
     print("aov\n\n\n")
-    print(aov(data[,column]~data[,1],data=data))
+    AOV_result<-aov(data[,column]~data[,1],data=data)
     print(paste("summary: ",summary(aov(data[,column]~data[,1],data=data))))
     AOV_p_value<-summary(aov(data[,column]~data[,1],data=data))[[1]][["Pr(>F)"]][[1]]
     print(AOV_p_value)
     if(AOV_p_value<0.05){
       cat("sa roznice miedzy grupmami\n")
+      TukeyResult<-TukeyHSD(AOV_result)
+      print(TukeyResult)
+      
       
     }else{
       cat("brak roznic miedzy grupami\n")
     }
   }
 }
+
+
