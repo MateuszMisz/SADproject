@@ -1,5 +1,7 @@
 library(car)
 library(dplyr)
+library(dunn.test)
+library(FSA)
 #args<- commandArgs(trailingOnly = false)
 #if(length(args!=1)){
 #  stop("sciezka do pliku musi byc jedynym argumentem")
@@ -8,7 +10,7 @@ library(dplyr)
 #if (!file.exists(file_path)) {
 # stop("Podany plik nie istnieje.")
 #}
-
+output_folder<-"C:\\Users\\mysza\\Documents\\SADproject\\wyniki"
 file_path<-"C:\\Users\\mysza\\Downloads\\przykladoweDane-Projekt (1).csv"
 data<-read.csv2(file=file_path)
 numeric_columns<-sapply(data,is.numeric)
@@ -16,19 +18,35 @@ numeric_columns<-sapply(data,is.numeric)
 numeric_column_names<-colnames(data[,numeric_columns])
 #numeric_data<-data[,which(data)]
 groups<-unique(data[,1])
-
+if(!dir.exists(output_folder))
+{
+  dir.create(output_folder)
+}
+setwd(output_folder)
 
 
 print("statystyki ogolne:")
-for(column in numeric_column_names){
-  boxplot(data[,column],main=column)
-}
+new_folder<-"charakterystyki_grup"
+if(!dir.exists((new_folder)))
+  dir.create(new_folder)
+setwd(new_folder)
+##for(column in numeric_column_names){
+  ##png(filename = paste("boxplot_",column,".png",sep = ""),width = 800,height = 600)
+  ##boxplot(data[,column],main=column)
+  ##dev.off()
+##}
+text<-c(paste("grupa;","parametr;","min;","max;","srednia;","mediana;","IQR;","wariancja;","odchylenie standardowe;"))
 for(group in groups){
-  print(paste("grupa :",group))
   tmpdata<-data[which(data[,1]==group),]
-  print(summary(tmpdata))
+  for(column in numeric_column_names){
+    png(filename=paste("boxplot",group,column,".csv",sep="_"),width=800,height = 600)
+    boxplot(tmpdata[,column],main=paste(column,"dla",group,sep=" "))
+    dev.off()
+    text<-c(text,paste(group,column,range(tmpdata[,column],na.rm=TRUE)[1],range(tmpdata[,column],na.rm=TRUE)[2],mean(tmpdata[,column],na.rm=TRUE),median(tmpdata[,column],na.rm=TRUE),IQR(tmpdata[,column],na.rm=TRUE),var(tmpdata[,column],na.rm=TRUE),sd(tmpdata[,column],na.rm=TRUE),sep=";"))
+  }
 }
-
+writeLines(text,"statystyki_ogolne.csv")
+setwd(output_folder)
 for(column in colnames(data))
 {
   if(!is.numeric(data[,column])){
@@ -152,6 +170,17 @@ for(column in numeric_column_names){
       
     }else{
       cat("brak roznic miedzy grupami\n")
+    }
+  }else{
+    Kruskal_result<-kruskal.test(data[,column]~data[,1],data=data)
+    Kruskal_p_value<-Kruskal_result$p.value
+    print(Kruskal_p_value)
+    if(Kruskal_p_value<0.05){
+      cat("kruskalsa roznice")
+      dunnTestResult<-dunnTest(data[,column],data[,1])
+      print(dunnTestResult)
+    }else{
+      cat("kruskal nie ma roznic")
     }
   }
 }
