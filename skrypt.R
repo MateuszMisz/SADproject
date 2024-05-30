@@ -53,7 +53,7 @@ for(column in numeric_column_names){
 
 
 ##charakterystyki grup
-openFolderFromMain("charakterystyki_grup")
+openFolderFromMain("statystyki z podzialem na grupy")
 
 text<-c(paste("grupa;","parametr;","min;","max;","srednia;","mediana;","IQR;","wariancja;","odchylenie standardowe;"))
 for(group in groups){
@@ -65,7 +65,7 @@ for(group in groups){
     text<-c(text,paste(group,column,range(tmpdata[,column],na.rm=TRUE)[1],range(tmpdata[,column],na.rm=TRUE)[2],mean(tmpdata[,column],na.rm=TRUE),median(tmpdata[,column],na.rm=TRUE),IQR(tmpdata[,column],na.rm=TRUE),var(tmpdata[,column],na.rm=TRUE),sd(tmpdata[,column],na.rm=TRUE),sep=";"))
   }
 }
-writeLines(text,"charakterystyki_grup.csv")
+writeLines(text,"statystyki_grup.csv")
 mainFolder()
 #
 #
@@ -84,12 +84,15 @@ for(column in colnames(data))
   }
 }
 #dane odstajace
-
+openFolderFromMain("statystyki_ogolne")
+text<-c(paste("zmienna","dane odstajace",sep=";"))
 for(column in numeric_column_names){
   print(paste("dane odstajace w kolumnie ",column,":"))
   tmp<-boxplot(data[,column],plot=FALSE)
   print(tmp$out)
+  text<-c(text,paste(tmp$out,sep=";"))
 }
+writeLines(text,"dane odstajace.csv")
 
 #obliczenie wszystkich srednich
 columnnames<-c()
@@ -132,6 +135,7 @@ if(length(completed_rows)>0){
   comrows<-paste(completed_rows,collapse="; ")
   print(paste("uzupelniono brakujace dane w rekordach: ",comrows))
 }
+write.csv(data,"dane z uzupelnionymi brakami",row.names = FALSE)
 
 
 
@@ -139,20 +143,15 @@ if(length(completed_rows)>0){
 
 
 
-for(column in numeric_column_names){
-  print(paste("statystyki z grupowaniem dla ",column,":"))
-  podumowanie <- group_by(data, colnames(data)[1]) %>%
-    summarise(
-      count = n(),
-      mean = format(round(mean(data[,column], na.rm = TRUE), 2), nsmall = 2),
-      sd = format(round(sd(data[,column], na.rm = TRUE), 2), nsmall = 2),
-      median = format(round(median(data[,column], na.rm = TRUE), 2), nsmall = 2)
-    )
-  print(podumowanie)
-}
+
+
 
 ### shapiro test
+
+openFolderFromMain("analiza_porownawcza_miedzy_grupami")
 print("sprawdzenie zgodnosci z rozkladem normalnym:")
+text<-c("")
+cnnnttt<-0
 for(column in numeric_column_names){
   good_for_aov=FALSE
   pvalueShapiroTestHSCRP <- data %>% group_by( colnames(data)[1]) %>%
@@ -160,9 +159,16 @@ for(column in numeric_column_names){
       p.value = shapiro.test(data[,column])$p.value
     )
   pvalueShapiroTestHSCRP
+  png(filename = paste("wykres gestosci",column,"z podzialem na grupy.png",sep="_"),width=800,height=600)
+  print(ggdensity(data, x =column,
+            color =colnames(data)[1], fill = colnames(data)[1],
+            palette = c("#99cc00", "#660099", "#0047b3"),
+            ylab = "gęstośc",
+            xlab = column
+  ) + facet_wrap(~ colnames(data)[1], scales = "free"))
+  dev.off()
   
-  #pvalueShapiroTestHSCRP$p.value
-  #pvalueShapiroTestHSCRP$p.value[(pvalueShapiroTestHSCRP[,1] == "CHOR1")]
+
   
   for(i in 1:length(pvalueShapiroTestHSCRP$p.value)){
     #print(pvalueShapiroTestHSCRP$p.value)
@@ -193,6 +199,9 @@ for(column in numeric_column_names){
       cat("sa roznice miedzy grupmami\n")
       TukeyResult<-TukeyHSD(AOV_result)
       print(TukeyResult)
+      writeLines(capture.output(print(TukeyResult)),paste(column,"_ANOV_istotne_statystycznie_roznice_miedzy_grupami.csv"))
+      writeLines(capture.output(print(TukeyResult)),paste(column,"_ANOV_istotne_statystycznie_roznice_miedzy_grupami.txt"))
+      cnnnttt<-cnnnttt+1
       
       
     }else{
@@ -206,11 +215,16 @@ for(column in numeric_column_names){
       cat("kruskalsa roznice")
       dunnTestResult<-dunnTest(data[,column],data[,1])
       print(dunnTestResult)
+      writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.csv"))
+      writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.txt"))
+      cnnnttt<-cnnnttt+1
+      
     }else{
       cat("kruskal nie ma roznic")
     }
   }
 }
+
 
 ####korelacja
 openFolderFromMain("wyniki_testow_korelacji")
