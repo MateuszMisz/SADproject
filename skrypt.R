@@ -1,6 +1,7 @@
 library(car)
 library(dplyr)
 library(dunn.test)
+library(ggpubr)
 library(FSA)
 openFolder<-function(folder_path){
   if(!dir.exists(folder_path))
@@ -213,6 +214,49 @@ for(column in numeric_column_names){
     }
   }
 }
+
+####korelacja
+
+for(group in groups){
+  for(i in 1:length(numeric_column_names)){
+    for(j in 1:length(numeric_column_names)){
+      method="pearson"
+      if(i<j){
+        FirstColumn<-data[which(data[,1]==group),numeric_column_names[i]]
+        SecondColumn<-data[which(data[,1]==group),numeric_column_names[j]]
+        FirstGroupSaphiro_pvalue <-shapiro.test(FirstColumn)$p.value
+        SecondGroupSaphiro_pvalue<-shapiro.test(SecondColumn)$p.value
+        if(FirstGroupSaphiro_pvalue>0.05 & SecondGroupSaphiro_pvalue>0.05){
+          print(paste("w grupie",group,"dla parametrow",numeric_column_names[i],"i",numeric_column_names[j],"przeprowadzono test korelacji pearsona",sep=" "))
+          CorResult<-cor.test(FirstColumn,SecondColumn,method="pearson")
+          
+        }else{
+          print(paste("w grupie",group,"dla parametrow",numeric_column_names[i],"i",numeric_column_names[j],"przeprowadzono test korelacji spearmana",sep=" "))
+          CorResult<-cor.test(FirstColumn,SecondColumn,method="spearman")
+          method="spearman"
+          
+        }
+        if(CorResult$p.value<0.05)
+        {
+          print(paste("istnieje korelacja; wspolczynnik = ",CorResult$estimate))
+          print(ggscatter(data[which(data[,1]==group),], x =numeric_column_names[i], y = numeric_column_names[j], 
+                    add = "reg.line", conf.int = TRUE, 
+                    cor.coef = TRUE, cor.method = method,
+                    color = colnames(data)[1], fill = colnames(data)[1],
+                    palette = c("#99cc00"),
+                    ylab = numeric_column_names[i], 
+                    xlab =numeric_column_names[j]
+          ))
+        }else{
+          print("brak korelacji")
+        }
+      }
+    }
+  }
+}
+
+
+
 print("zrob cos z table!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
 
 
