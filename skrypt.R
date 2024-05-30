@@ -2,6 +2,13 @@ library(car)
 library(dplyr)
 library(dunn.test)
 library(FSA)
+openFolder<-function(folder_path){
+  if(!dir.exists(folder_path))
+  {
+    dir.create(folder_path)
+  }
+  setwd(folder_path)
+}
 #args<- commandArgs(trailingOnly = false)
 #if(length(args!=1)){
 #  stop("sciezka do pliku musi byc jedynym argumentem")
@@ -11,6 +18,13 @@ library(FSA)
 # stop("Podany plik nie istnieje.")
 #}
 output_folder<-"C:\\Users\\mysza\\Documents\\SADproject\\wyniki"
+mainFolder<-function(){
+  setwd(output_folder)
+}
+openFolderFromMain<-function(folder_path){
+  mainFolder()
+  openFolder(folder_path)
+}
 file_path<-"C:\\Users\\mysza\\Downloads\\przykladoweDane-Projekt (1).csv"
 data<-read.csv2(file=file_path)
 numeric_columns<-sapply(data,is.numeric)
@@ -18,35 +32,50 @@ numeric_columns<-sapply(data,is.numeric)
 numeric_column_names<-colnames(data[,numeric_columns])
 #numeric_data<-data[,which(data)]
 groups<-unique(data[,1])
-if(!dir.exists(output_folder))
-{
-  dir.create(output_folder)
-}
-setwd(output_folder)
+openFolder(output_folder)
 
-
+##
 print("statystyki ogolne:")
-new_folder<-"charakterystyki_grup"
-if(!dir.exists((new_folder)))
-  dir.create(new_folder)
-setwd(new_folder)
-##for(column in numeric_column_names){
-  ##png(filename = paste("boxplot_",column,".png",sep = ""),width = 800,height = 600)
-  ##boxplot(data[,column],main=column)
-  ##dev.off()
-##}
+
+
+##statystyki ogolne
+openFolderFromMain("statystyki_ogolne")
+tmptext<-paste(numeric_column_names,sep=";")
+text<-c(paste("parametr","min","max","srednia","mediana","IQR","wariancja","odchylenie standardowe",sep=";"))
+for(column in numeric_column_names){
+  png(filename=paste(column,"_boxplot.png",sep=""),width=800,height=600)
+  boxplot(data[,column],main=column)
+  dev.off()
+  text<-c(text,paste(column,range(data[,column],na.rm=TRUE)[1],range(data[,column],na.rm=TRUE)[2],mean(data[,column],na.rm=TRUE),median(data[,column],na.rm=TRUE),IQR(data[,column],na.rm=TRUE),var(data[,column],na.rm=TRUE),sd(data[,column],na.rm=TRUE),sep=";"))
+}
+  writeLines(text,"statystyki_ogolne.csv")
+
+
+##charakterystyki grup
+openFolderFromMain("charakterystyki_grup")
+
 text<-c(paste("grupa;","parametr;","min;","max;","srednia;","mediana;","IQR;","wariancja;","odchylenie standardowe;"))
 for(group in groups){
   tmpdata<-data[which(data[,1]==group),]
   for(column in numeric_column_names){
-    png(filename=paste("boxplot",group,column,".csv",sep="_"),width=800,height = 600)
+    png(filename=paste("boxplot",group,column,".png",sep="_"),width=800,height = 600)
     boxplot(tmpdata[,column],main=paste(column,"dla",group,sep=" "))
     dev.off()
     text<-c(text,paste(group,column,range(tmpdata[,column],na.rm=TRUE)[1],range(tmpdata[,column],na.rm=TRUE)[2],mean(tmpdata[,column],na.rm=TRUE),median(tmpdata[,column],na.rm=TRUE),IQR(tmpdata[,column],na.rm=TRUE),var(tmpdata[,column],na.rm=TRUE),sd(tmpdata[,column],na.rm=TRUE),sep=";"))
   }
 }
-writeLines(text,"statystyki_ogolne.csv")
-setwd(output_folder)
+writeLines(text,"charakterystyki_grup.csv")
+mainFolder()
+#
+#
+#
+#
+#
+#zrob cos z table!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#
+#
+#
 for(column in colnames(data))
 {
   if(!is.numeric(data[,column])){
@@ -184,5 +213,6 @@ for(column in numeric_column_names){
     }
   }
 }
+print("zrob cos z table!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1")
 
 
