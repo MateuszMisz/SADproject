@@ -133,10 +133,7 @@ if(length(completed_rows)>0){
   print(paste("uzupelniono brakujace dane w rekordach: ",comrows))
 }
 
-wynik<- group_by(data,1)%>% summarise(
-  srednia=mean("MON",na.rm=TRUE)
-)
-wynik
+
 
 
 
@@ -216,7 +213,8 @@ for(column in numeric_column_names){
 }
 
 ####korelacja
-
+openFolderFromMain("wyniki_testow_korelacji")
+text<-c(paste("grupa","zmienna1","zmienna2","wspolczynnik korelacji","metoda","p-value",sep=";"))
 for(group in groups){
   for(i in 1:length(numeric_column_names)){
     for(j in 1:length(numeric_column_names)){
@@ -238,15 +236,18 @@ for(group in groups){
         }
         if(CorResult$p.value<0.05)
         {
+          text<-c(text,paste(group,numeric_column_names[i],numeric_column_names[j],CorResult$estimate,method,CorResult$p.value,sep=";"))
           print(paste("istnieje korelacja; wspolczynnik = ",CorResult$estimate))
-          print(ggscatter(data[which(data[,1]==group),], x =numeric_column_names[i], y = numeric_column_names[j], 
+          png(filename = paste("wykres_korealcji",numeric_column_names[i],"~",numeric_column_names[j],"w grupie",group,".png",sep="_"),width=800,height=600)
+              ggscatter(data[which(data[,1]==group),], x =numeric_column_names[i], y = numeric_column_names[j], 
                     add = "reg.line", conf.int = TRUE, 
                     cor.coef = TRUE, cor.method = method,
                     color = colnames(data)[1], fill = colnames(data)[1],
                     palette = c("#99cc00"),
                     ylab = numeric_column_names[i], 
                     xlab =numeric_column_names[j]
-          ))
+          )
+              dev.off()
         }else{
           print("brak korelacji")
         }
@@ -254,6 +255,8 @@ for(group in groups){
     }
   }
 }
+
+writeLines(text,"zaleznosci_miedzy_parametrami.csv")
 
 
 
