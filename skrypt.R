@@ -8,18 +8,18 @@ library(FSA)
 library(argparse)
 library(ggplot2)
 print("start")
-parser<-ArgumentParser()
-parser$add_argument("input",type="character")
-parser$add_argument("output",type="character")
-args<-parser$parse_args()
-file_path<-args$input
-output_folder<-args$output
-#file_path<-"C:\\Users\\mysza\\Downloads\\przykladoweDaneZBrakami.csv"
-#output_folder<-"C:\\Users\\mysza\\Documents\\SADproject\\wwwwwwwwwwwwwww"
+#parser<-ArgumentParser()
+#parser$add_argument("input",type="character")
+#parser$add_argument("output",type="character")
+#args<-parser$parse_args()
+#file_path<-args$input
+#output_folder<-args$output
+file_path<-"C:\\Users\\mysza\\Downloads\\przykladoweDaneZBrakami.csv"
+output_folder<-"C:\\Users\\mysza\\Documents\\SADproject\\wwwwwwwwwwwwwww"
 if(!file.exists(file_path))
   stop("plk nie istnieje")
-if(!dir.exists(output_folder))
-  dir.create(output_folder)
+
+dir.create(output_folder)
 setwd(output_folder)
 openFolder<-function(folder_path){
   if(!dir.exists(folder_path))
@@ -28,7 +28,21 @@ openFolder<-function(folder_path){
   }
   setwd(folder_path)
 }
-
+groups_comparisons<-function(groups){
+  res<-list()
+  for( i in 1:length(groups)){
+    for(j in 1:length(groups)){
+      if(i<j){
+        res<-append(res,paste(groups[i],"~",groups[j],sep=""))
+      }
+    }}
+  return(res)
+}
+TPV<-function(TukeyResult,groups){
+  pvl<-c()
+  pvl<-c(TukeyResult[])
+  
+}
 corCoefInter <- function(corCoef) {
   if (corCoef <= -0.7 && corCoef > -1) {
     return("bardzo_silna_korelacja_ujemna")
@@ -62,18 +76,13 @@ openFolderFromMain<-function(folder_path){
   openFolder(folder_path)
 }
 
-print(file_path)
 data<-read.csv2(file=file_path)
-print(file.exists(file_path))
-print("wypiszdata")
-print(data)
-print("podata")
+print(paste("odczytano dane z ",file_path,sep=""))
 numeric_columns<-sapply(data,is.numeric)
 numeric_column_names<-colnames(data[,numeric_columns])
 groups<-unique(data[,1])
 openFolder(output_folder)
 ##
-print("statystyki ogolne:")
 
 
 ##statystyki ogolne
@@ -103,6 +112,7 @@ rownames(all_means)<-groups
 
 
 ####uzupelnienie brakow
+print("uzupelnianie brakow")
 completed_rows<-c()
 for(column in colnames(data))
 {
@@ -120,23 +130,45 @@ if(length(completed_rows)>0){
   comrows<-paste(completed_rows,collapse="; ")
   print(paste("uzupelniono brakujace dane w rekordach: ",comrows))
 }
-write.csv(data,"dane z uzupelnionymi brakami",row.names = FALSE)
+write.csv(data,"dane z uzupelnionymi brakami.csv",row.names = FALSE)
+print("statystyki ogolne:")
 
 tmptext<-paste(numeric_column_names,sep=";")
-text<-c(paste("parametr","min","max","srednia","mediana","IQR","wariancja","odchylenie standardowe",sep=";"))
+text<-c(paste("parametr","min","max","srednia","mediana","IQR","wariancja","odchylenie_standardowe",sep=";"))
 for(column in numeric_column_names){
   png(filename=paste(column,"_boxplot.png",sep=""),width=800,height=600)
   boxplot(data[,column],main=column)
   dev.off()
   text<-c(text,paste(column,range(data[,column],na.rm=TRUE)[1],range(data[,column],na.rm=TRUE)[2],mean(data[,column],na.rm=TRUE),median(data[,column],na.rm=TRUE),IQR(data[,column],na.rm=TRUE),var(data[,column],na.rm=TRUE),sd(data[,column],na.rm=TRUE),sep=";"))
 }
-  writeLines(text,"statystyki_ogolne.csv")
+print("utworzono wykresy boxplot dla kazdej zmiennej numerycznej")
+  writeLines(text,"statystyki_ogolne_zmienych_numerycznych.csv")
+  text<-c()
+  
+  for(column in names(data)[!sapply(data,is.numeric)]){
+    text<-c(text,paste("zmienna:",column),capture.output(table(data[,column])))
+  }
 
+  writeLines(text,"statystyki_ogolne_zmiennych_nienumerycznych.txt")
+  #writeLines(capture.output(summary(data[,names(data)[!sapply(data,is.numeric)]])),"statystyki_ogolne_zmiennych_nienumerycznych.txt")
+
+
+
+#dane odstajace
+openFolderFromMain("statystyki_ogolne")
+text<-c(paste("zmienna","dane_odstajace",sep=";"))
+for(column in numeric_column_names){
+  print(paste("dane odstajace w kolumnie ",column,":"))
+  tmp<-boxplot(data[,column],plot=FALSE)
+  print(tmp$out)
+  text<-c(text,paste(column,tmp$out,sep=";"))
+}
+writeLines(text,"dane odstajace.csv")
 
 ##charakterystyki grup
 openFolderFromMain("statystyki_z_podzialem_na_grupy")
 
-text<-c(paste("grupa","parametr","min","max","srednia","mediana","IQR","wariancja","odchylenie standardowe"))
+text<-c(paste("grupa","parametr","min","max","srednia","mediana","IQR","wariancja","odchylenie_standardowe"))
 for(group in groups){
   tmpdata<-data[which(data[,1]==group),]
   for(column in numeric_column_names){
@@ -148,24 +180,7 @@ for(group in groups){
 }
 writeLines(text,"statystyki_grup.csv")
 
-for(column in colnames(data))
-{
-  if(!is.numeric(data[,column])){
-    print(table(data[,column]))
-  }
-}
-#dane odstajace
-openFolderFromMain("statystyki_ogolne")
-text<-c(paste("zmienna","dane odstajace",sep=";"))
-for(column in numeric_column_names){
-  print(paste("dane odstajace w kolumnie ",column,":"))
-  tmp<-boxplot(data[,column],plot=FALSE)
-  print(tmp$out)
-  text<-c(text,paste(tmp$out,sep=";"))
-}
-writeLines(text,"dane odstajace.csv")
-
-
+print("utworzono pliki ze statystykami z podziałem na grupy")
 
 
 
@@ -176,18 +191,17 @@ writeLines(text,"dane odstajace.csv")
 
 
 ### shapiro test
-
+print("analiza porownawcza:")
 openFolderFromMain("analiza_porownawcza_miedzy_grupami")
-print("sprawdzenie zgodnosci z rozkladem normalnym:")
+print("sprawdzenie zgodnosci z rozkladem normalnym i jednorodnosci wariancji:")
 text<-c("")
 cnnnttt<-0
 for(column in numeric_column_names){
   good_for_aov=TRUE
-  pvalueShapiroTestHSCRP <- data %>% group_by( colnames(data)[1]) %>%
+  pvalueShapiroTestHSCRP <- group_by(data, data[,1]) %>%
     summarise(
       p.value = shapiro.test(data[,column])$p.value
     )
-  pvalueShapiroTestHSCRP
   png(filename = paste("wykres gestosci",column,"z podzialem na grupy.png",sep="_"),width=800,height=600)
   print(ggdensity(data, x =column,
             color =colnames(data)[1], fill = colnames(data)[1],
@@ -204,62 +218,79 @@ for(column in numeric_column_names){
     if(pvalueShapiroTestHSCRP$p.value[i] < 0.05){
       cat("\ndla ",column," p-value = ", pvalueShapiroTestHSCRP$p.value[i], "< 0.05 - nie można założyć zgodności z rozkładem normalnym\n")
     good_for_aov=FALSE
+    break
       }else{
       cat("\ndla ",column," p-value = ", pvalueShapiroTestHSCRP$p.value[i], "> 0.05 - można założyć zgodność z rozkładem normalnym\n")
       print(paste("ocena jednorodnosci wariancji dla: ",column))
       leveneTestResult<-leveneTest(data[,column]~data[,1],data=data)
-      print(leveneTestResult)
-      print(leveneTestResult$"Pr(>F)"[1])
       if(leveneTestResult$"Pr(>F)"[1]<0.05){
         good_for_aov<-FALSE
-        cat("brak jednorodnosc\n")
+        cat("brak jednorodnosci wariancji\n")
+        break
       }else{
-        cat("jednorodnosc\n")
+        cat("jest jednorodnosc wariancji\n")
         
       }
       
     }
   }
   if(good_for_aov){
-    print("aov\n\n\n")
     AOV_result<-aov(data[,column]~data[,1],data=data)
-    print(paste("summary: ",summary(aov(data[,column]~data[,1],data=data))))
+    print("przeprowadzono test ANOVA")
+    
     AOV_p_value<-summary(aov(data[,column]~data[,1],data=data))[[1]][["Pr(>F)"]][[1]]
-    print(AOV_p_value)
     if(AOV_p_value<0.05){
-      cat("sa roznice miedzy grupmami\n")
+      cat("znaleziono istotne statystycznie roznice\n")
       TukeyResult<-TukeyHSD(AOV_result)
+      #tpvvv<-TPV(TukeyResult,groups)
+      length(TukeyResult)
       print(TukeyResult)
-      writeLines(capture.output(print(TukeyResult)),paste(column,"_ANOV_istotne_statystycznie_roznice_miedzy_grupami.csv"))
+      tmpp<-TukeyResult$data[, 4]
+      
+      #writeLines(capture.output(print(TukeyResult)),paste(column,"_ANOV_istotne_statystycznie_roznice_miedzy_grupami.csv"))
       writeLines(capture.output(print(TukeyResult)),paste(column,"_ANOV_istotne_statystycznie_roznice_miedzy_grupami.txt"))
       cnnnttt<-cnnnttt+1
+      print(str(TukeyResult))
+      xxx<-groups_comparisons(groups)
+      tekst_z_grupami<-paste(paste(groups_comparisons(groups),TukeyResult$data[,4]),"\n",collapse="")
+      print(tekst_z_grupami)
+      p<-ggplot(data,aes_string(x=names(data)[1],y=column))+
+        geom_boxplot()+
+        
+        labs(title=paste("wykres pudelkowy dla \n",column,"\n ",tekst_z_grupami,sep=""),
+             x=names(data)[1],
+             y=column)+theme(plot.title = element_text(size = 6))
+      
+      print(p)
+      ggsave(paste("wykres_pudełkowy_dla",column,"z podzialem_na_grupy.png"),plot = p,width=6,height=8,units="in")
+      
       
     }else{
-      cat("brak roznic miedzy grupami\n")
+      cat("brak istotnych statystycznie roznic miedzy grupami\n")
     }
   }else{
     Kruskal_result<-kruskal.test(data[,column]~data[,1],data=data)
+    print("przeprowadzono test Kruskala-Willisa")
     Kruskal_p_value<-Kruskal_result$p.value
-    print(Kruskal_p_value)
     if(Kruskal_p_value<0.05){
-      cat("kruskalsa roznice")
+      cat("znaleziono istotne statystycznie roznice")
       dunnTestResult<-dunnTest(data[,column],data[,1])
-      print(dunnTestResult)
-      writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.csv"))
+      #writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.csv"))
       writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.txt"))
       cnnnttt<-cnnnttt+1
       
     }else{
-      cat("kruskal nie ma roznic")
+      cat("brak istotnych statystycznie roznic miedzy grupami")
     }
   }
 }
-
+stop()
 
 ####korelacja
+print("analiza zaleznosci miedzy zmiennymi")
 plots<-list()
 openFolderFromMain("wyniki_testow_korelacji")
-text<-c(paste("grupa","zmienna1","zmienna2","wspolczynnik_korelacji","metoda","p-value",sep=";"))
+text<-c(paste("grupa","zmienna1","zmienna2","wspolczynnik_korelacji","metoda","p-value","ocena_wspolczynnika_korelacji",sep=";"))
 for(group in groups){
   for(i in 1:length(numeric_column_names)){
     for(j in 1:length(numeric_column_names)){
@@ -283,7 +314,6 @@ for(group in groups){
         {
           text<-c(text,paste(group,numeric_column_names[i],numeric_column_names[j],CorResult$estimate,method,CorResult$p.value,corCoefInter(CorResult$estimate),sep=";"))
           print(paste("istnieje korelacja; wspolczynnik = ",CorResult$estimate))
-          print("tu powininen byc wykresssssssssssssss")
           #png(filename = paste("wykres_korealcji",numeric_column_names[i],"~",numeric_column_names[j],"w grupie",group,".png",sep="_"),width=800,height=600)
           
           gg <- data[which(data[,1] == group), ]
