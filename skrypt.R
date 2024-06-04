@@ -1,21 +1,48 @@
-library(car)
-library(Hmisc)
+options(warn = -1)
 
-library(dplyr)
-library(dunn.test)
-library(ggpubr)
-library(FSA)
-library(argparse)
-library(ggplot2)
-print("start")
-#parser<-ArgumentParser()
-#parser$add_argument("input",type="character")
-#parser$add_argument("output",type="character")
-#args<-parser$parse_args()
-#file_path<-args$input
-#output_folder<-args$output
-file_path<-"C:\\Users\\mysza\\Downloads\\przykladoweDaneZBrakami.csv"
-output_folder<-"C:\\Users\\mysza\\Documents\\SADproject\\wwwwwwwwwwwwwww"
+options(show.error.messages = FALSE)
+suppressMessages({
+  
+if (!require("car")) {
+  install.packages("car")
+  library("car")
+}
+if (!require("Hmisc")) {
+  install.packages("Hmisc")
+  library("Hmisc")
+}
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  library("dplyr")
+}
+if (!require("dunn.test")) {
+  install.packages("dunn.test")
+  library("dunn.test")
+}
+if (!require("ggpubr")) {
+  install.packages("ggpubr")
+  library("ggpubr")
+}
+if (!require("FSA")) {
+  install.packages("FSA")
+  library("FSA")
+}
+if (!require("argparse")) {
+  install.packages("argparse")
+  library("argparse")
+}
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+  library("ggplot2")
+}})
+parser<-ArgumentParser()
+parser$add_argument("input",type="character")
+parser$add_argument("output",type="character")
+args<-parser$parse_args()
+file_path<-args$input
+output_folder<-args$output
+#file_path<-"C:\\Users\\mysza\\Downloads\\przykladoweDaneZBrakami.csv"
+#output_folder<-"C:\\Users\\mysza\\Documents\\SADproject\\wwwwwwwwwwwwwww"
 if(!file.exists(file_path))
   stop("plk nie istnieje")
 
@@ -66,7 +93,6 @@ corCoefInter <- function(corCoef) {
     return("Wartość_współczynnika_korelacji_jest_niepoprawna")
   }
 }
-#output_folder<-args[2]
 
 mainFolder<-function(){
   setwd(output_folder)
@@ -252,14 +278,14 @@ for(column in numeric_column_names){
       cnnnttt<-cnnnttt+1
       print(str(TukeyResult))
       xxx<-groups_comparisons(groups)
-      tekst_z_grupami<-paste(paste(groups_comparisons(groups),TukeyResult$data[,4]),"\n",collapse="")
+      tekst_z_grupami<-paste(paste(groups_comparisons(groups),"p-value = ",TukeyResult$data[,4]),"\n",collapse="")
       print(tekst_z_grupami)
       p<-ggplot(data,aes_string(x=names(data)[1],y=column))+
         geom_boxplot()+
         
         labs(title=paste("wykres pudelkowy dla \n",column,"\n ",tekst_z_grupami,sep=""),
              x=names(data)[1],
-             y=column)+theme(plot.title = element_text(size = 6))
+             y=column)+theme(plot.title = element_text(size = 10))
       
       print(p)
       ggsave(paste("wykres_pudełkowy_dla",column,"z podzialem_na_grupy.png"),plot = p,width=6,height=8,units="in")
@@ -275,16 +301,26 @@ for(column in numeric_column_names){
     if(Kruskal_p_value<0.05){
       cat("znaleziono istotne statystycznie roznice")
       dunnTestResult<-dunnTest(data[,column],data[,1])
+      tekst_z_grupami<-paste(paste(groups_comparisons(groups),"p-value =",dunnTestResult$res$P.adj),"\n",collapse="")
       #writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.csv"))
       writeLines(capture.output(print(dunnTestResult)),paste(column,"Kruskal_istotne_statystycznie_roznice_miedzy_grupami.txt"))
       cnnnttt<-cnnnttt+1
+      p<-ggplot(data,aes_string(x=names(data)[1],y=column))+
+        geom_boxplot()+
+        
+        labs(title=paste("wykres pudelkowy dla \n",column,"\n ",tekst_z_grupami,sep=""),
+             x=names(data)[1],
+             y=column)+theme(plot.title = element_text(size = 10))
+      
+      print(p)
+      ggsave(paste("wykres_pudełkowy_dla",column,"z podzialem_na_grupy.png"),plot = p,width=6,height=8,units="in")
       
     }else{
       cat("brak istotnych statystycznie roznic miedzy grupami")
     }
   }
 }
-stop()
+
 
 ####korelacja
 print("analiza zaleznosci miedzy zmiennymi")
@@ -301,11 +337,12 @@ for(group in groups){
         FirstGroupSaphiro_pvalue <-shapiro.test(FirstColumn)$p.value
         SecondGroupSaphiro_pvalue<-shapiro.test(SecondColumn)$p.value
         if(FirstGroupSaphiro_pvalue>0.05 & SecondGroupSaphiro_pvalue>0.05){
-          print(paste("w grupie",group,"dla parametrow",numeric_column_names[i],"i",numeric_column_names[j],"przeprowadzono test korelacji pearsona",sep=" "))
+          
+          print(paste("w grupie",group,"dla parametrow",numeric_column_names[i],"i",numeric_column_names[j],"mozna zalozyc zgodnosc z rozkladnem normalnym i przeprowadzono test korelacji pearsona",sep=" "))
           CorResult<-cor.test(FirstColumn,SecondColumn,method="pearson")
           
         }else{
-          print(paste("w grupie",group,"dla parametrow",numeric_column_names[i],"i",numeric_column_names[j],"przeprowadzono test korelacji spearmana",sep=" "))
+          print(paste("w grupie",group,"dla parametrow",numeric_column_names[i],"i",numeric_column_names[j],"nie mozna zalozyc zgodnosci z reozkladem normalnym i przeprowadzono test korelacji spearmana",sep=" "))
           CorResult<-cor.test(FirstColumn,SecondColumn,method="spearman")
           method="spearman"
           
@@ -318,8 +355,8 @@ for(group in groups){
           
           gg <- data[which(data[,1] == group), ]
           p <- ggscatter(gg, x = numeric_column_names[i], y = numeric_column_names[j], 
-                         add = "reg.line", conf.int = TRUE, 
-                         cor.coef = TRUE, cor.method = "pearson",
+                         add = "reg.line", conf.int = TRUE, stat.cor=TRUE,
+                         cor.coef = TRUE, cor.method = method,
                          color = colnames(data)[1], fill = colnames(data)[1],
                          palette = c("#99cc00"),
                          ylab = numeric_column_names[j], 

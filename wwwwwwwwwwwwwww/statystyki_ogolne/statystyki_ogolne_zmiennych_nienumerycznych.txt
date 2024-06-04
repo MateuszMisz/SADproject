@@ -1,0 +1,8 @@
+zmienna: grupa
+
+   CHOR1    CHOR2 KONTROLA 
+      25       25       25 
+zmienna: plec
+
+ k  m 
+40 35 

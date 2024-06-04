@@ -1,0 +1,11 @@
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = data[, column] ~ data[, 1], data = data)
+
+$`data[, 1]`
+                     diff        lwr         upr     p adj
+CHOR2-CHOR1     0.4232228 -0.3274109  1.17385653 0.3729404
+KONTROLA-CHOR1 -0.7261892 -1.4768229  0.02444453 0.0600433
+KONTROLA-CHOR2 -1.1494120 -1.9000457 -0.39877827 0.0013523
+
